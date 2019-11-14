@@ -34,11 +34,6 @@ namespace SecurePasswordGenerator
             this.GeneratePassword();
         }
 
-        ~Form1()
-        {
-            this.RNGCrypto.Dispose();
-        }
-
         public void GeneratePassword()
         {
             var reminingChars = (int)this.passwordLen.Value;
