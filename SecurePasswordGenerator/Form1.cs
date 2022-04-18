@@ -5,94 +5,111 @@ using System.Security.Cryptography;
 using System.Linq;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace SecurePasswordGenerator
 {
     public partial class Form1 : Form
     {
-        private readonly RNGCryptoServiceProvider RNGCrypto = new RNGCryptoServiceProvider();
+        private readonly RandomNumberGenerator RNGCrypto = RandomNumberGenerator.Create();
+        private readonly ViableCodePoints CodePoints = new();
 
         public Form1()
         {
-            this.Icon = this.GetApplicationIcon();
-
             InitializeComponent();
 
-            this.AcceptButton = this.button1;
+            AcceptButton = generate;
+            Icon = Utils.GetApplicationIcon();
 
-            // Automatically apply an event handler for each
-            // checkbox to generate a new password
-            // immediately upon check state changed.
-            foreach (Control c in this.groupBox2.Controls)
+            // Automatically apply an event handler for each checkbox to
+            // generate a new password immediately upon check state changed.
+            foreach (Control c in groupBox2.Controls)
             {
                 if (c is CheckBox check)
                 {
-                    check.CheckedChanged += (sender, e) => this.GeneratePassword();
+                    check.CheckedChanged += (sender, e) => GeneratePassword();
                 }
             }
+
+            toolTip1.SetToolTip(passwordLen, "The length of the password to generate, in characters (or graphemes, if unicode or emoji are used)");
+            toolTip1.SetToolTip(useLetters, "Use basic letters (a-z and A-Z)");
+            toolTip1.SetToolTip(useNumbers, "Use basic numbers (0-9)");
+            toolTip1.SetToolTip(useSymbols, "Use commonly accepted symbols");
+            toolTip1.SetToolTip(useEmoji, "Use Emoji, ever permitted variant");
+            toolTip1.SetToolTip(useUnicode, "No right, no wrong, no rules for me - I'm free!");
+            toolTip1.SetToolTip(excludeCharacters, "Excluce specific characters from the password generation list");
+            toolTip1.SetToolTip(includedCharacters, "Include specific characters in the password generation list");
 
             this.GeneratePassword();
         }
 
         public void GeneratePassword()
         {
-            var reminingChars = (int)this.passwordLen.Value;
-            var finalPassword = "";
-            var availableChars = "";
-            var availableFinal = "";
+            var reminingCodePoints = (int)passwordLen.Value;
+            var availableCodePoints = "";
 
-            // This case is special and requires a bit more ground work.
-            if (this.useUnicodeMadness.Checked)
+            var isUnicodeMadness = useUnicode.Checked;
+            var isEmoji = useEmoji.Checked;
+
+            if (useLetters.Checked && !isUnicodeMadness)
             {
-                availableFinal = ViableCharacters.Unicode;
-            }
-            else
-            {
-                if (this.useLetters.Checked)
-                {
-                    availableChars += ViableCharacters.Letters;
-                }
-
-                if (this.useNumbers.Checked)
-                {
-                    availableChars += ViableCharacters.Numbers;
-                }
-
-                if (this.useSymbols.Checked)
-                {
-                    availableChars += ViableCharacters.Symbols;
-                }
-
-                if (this.useExclude.Checked)
-                {
-                    foreach (char c in this.excludeCharacters.Text)
-                    {
-                        availableChars = availableChars.Replace(c.ToString(), "");
-                    }
-                }
-
-                if (this.useInclude.Checked)
-                {
-                    availableChars += this.includedCharacters.Text;
-                }
-
-                // De-duplicate the characters.
-                availableFinal = new string(availableChars.Distinct().ToArray());
+                availableCodePoints += CodePoints.Letters;
             }
 
-            var availableLen = (availableFinal.Length - 1);
-            if (availableLen == -1)
+            if (useNumbers.Checked && !isUnicodeMadness)
             {
+                availableCodePoints += CodePoints.Numbers;
+            }
+
+            if (useSymbols.Checked && !isUnicodeMadness)
+            {
+                availableCodePoints += CodePoints.Symbols;
+            }
+
+            if (isEmoji)
+            {
+                availableCodePoints += CodePoints.Emoji;
+            }
+
+            if (isUnicodeMadness)
+            {
+                availableCodePoints += CodePoints.Unicode;
+            }
+
+            if (useExclude.Checked)
+            {
+                foreach (var c in excludeCharacters.Text)
+                {
+                    availableCodePoints = availableCodePoints.Replace(c.ToString(), "");
+                }
+            }
+
+            if (useInclude.Checked)
+            {
+                availableCodePoints += includedCharacters.Text;
+            }
+
+            // Ensure that there is only one of each codepoint in our final string.
+            // We do not want to do this when dealing with unicode since it slows things down
+            // due to the vast number of codepoints available.
+            var availableFinal = 
+                isUnicodeMadness ? availableCodePoints : availableCodePoints.DeduplicateCodePoints();
+
+            var allCodePoints = availableFinal.GetCodePoints();
+            if (allCodePoints.Count == 0)
+            {
+                password.Text = "";
                 return;
             }
 
-            while (reminingChars > 0)
+            var passwordText = "";
+            while (reminingCodePoints > 0)
             {
-                finalPassword += availableFinal[this.CryptoRandomInteger(0, availableLen)];
-                --reminingChars;
+                passwordText += allCodePoints[CryptoRandomInteger(0, allCodePoints.Count)];
+                --reminingCodePoints;
             }
 
-            this.password.Text = finalPassword;
+            password.Text = passwordText;
         }
 
         private int CryptoRandomInteger(int min, int max)
@@ -109,60 +126,59 @@ namespace SecurePasswordGenerator
             return (int)(min + (max - min) * (scale / (double)uint.MaxValue));
         }
 
-        private void CheckBox1_CheckStateChanged(object sender, EventArgs e)
+        private void DisplayPassword_CheckStateChanged(object sender, EventArgs e)
         {
-            this.password.UseSystemPasswordChar = !this.enableDisplay.Checked;
+            password.UseSystemPasswordChar = !enableDisplay.Checked;
         }
 
-        private void NumericUpDown1_ValueChanged(object sender, EventArgs e)
+        private void PasswordLength_ValueChanged(object sender, EventArgs e)
         {
-            this.GeneratePassword();
+            GeneratePassword();
         }
 
         private void UseExclude_CheckedChanged(object sender, EventArgs e)
         {
-            this.excludeCharacters.Enabled = this.useExclude.Checked;
-            this.excludeCharacters.ReadOnly = !this.useExclude.Checked;
-
-            this.GeneratePassword();
+            excludeCharacters.Enabled = useExclude.Checked;
+            excludeCharacters.ReadOnly = !useExclude.Checked;
         }
 
         private void UseInclude_CheckedChanged(object sender, EventArgs e)
         {
-            this.includedCharacters.Enabled = this.useInclude.Checked;
-            this.includedCharacters.ReadOnly = !this.useInclude.Checked;
-
-            this.GeneratePassword();
+            includedCharacters.Enabled = useInclude.Checked;
+            includedCharacters.ReadOnly = !useInclude.Checked;
         }
 
         private void UseUnicodeMadness_CheckedChanged(object sender, EventArgs e)
         {
-            var enable = !this.useUnicodeMadness.Checked;
-
-            this.useInclude.Enabled = enable;
-            this.includedCharacters.Enabled = enable;
-            this.useExclude.Enabled = enable;
-            this.excludeCharacters.Enabled = enable;
-            this.useLetters.Enabled = enable;
-            this.useNumbers.Enabled = enable;
-            this.useSymbols.Enabled = enable;
-
-            this.GeneratePassword();
+            var controls = new [] { useLetters, useNumbers, useSymbols };
+            foreach (var c in controls)
+            {
+                c.Enabled = !useUnicode.Checked;
+            }
         }
 
-        private void Button1_Click(object sender, EventArgs e)
+        private void Generate_Click(object sender, EventArgs e)
         {
-            this.GeneratePassword();
+            GeneratePassword();
         }
 
-        private void Button2_Click(object sender, EventArgs e)
+        private void Copy_Click(object sender, EventArgs e)
         {
-            Clipboard.SetText(this.password.Text);
+            Clipboard.SetText(password.Text);
         }
 
-        private Icon GetApplicationIcon()
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            return Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
+            if (keyData == (Keys.D | Keys.Control | Keys.Shift))
+            {
+                var f = new Form2();
+                f.ShowDialog();
+
+                return true;
+            }
+
+            // Call the base class
+            return base.ProcessCmdKey(ref msg, keyData);
         }
     }
 }
