@@ -1,6 +1,5 @@
-﻿using System;
+﻿using System.Globalization;
 using System.Text;
-using System.Globalization;
 
 namespace SecurePasswordGenerator
 {
@@ -20,19 +19,19 @@ namespace SecurePasswordGenerator
         /// <summary>
         /// A list of all basic (Latin) letters. a-z and A-Z.
         /// </summary>
-        public string Letters { get; private set; } = "";
+        public string Letters = "";
         private readonly string _Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         /// <summary>
         /// A list of all basic numbers. 0-9.
         /// </summary>
-        public string Numbers { get; private set; } = "";
+        public string Numbers = "";
         private readonly string _Numbers = "1234567890";
 
         /// <summary>
         /// A list of common symbols.
         /// </summary>
-        public string Symbols { get; private set; } = "";
+        public string Symbols = "";
         private readonly string _Symbols = " !\"#$%&\'()*+,-./\\:;?@[]^_`{|}~£^!|";
 
         /// <summary>
@@ -48,6 +47,15 @@ namespace SecurePasswordGenerator
         public ViableCodePoints()
         {
             ReadCacheFile();
+        }
+
+        #region Emoji Processing
+        /// <summary>
+        /// Update the Emoji codepoint list.
+        /// </summary>
+        public void UpdateEmojiCodePoints()
+        {
+            Emoji = GetViableEmojiCodePoints();
         }
 
         /// <summary>
@@ -127,6 +135,16 @@ namespace SecurePasswordGenerator
 
             return sb.ToString();
         }
+        #endregion // Emoji Processing
+
+        #region Unicode Processing
+        /// <summary>
+        /// Update the unicode codepoint list.
+        /// </summary>
+        public void UpdateUnicodeCodePoints()
+        {
+            Unicode = GetViableUnicodeCodePoints();
+        }
 
         /// <summary>
         /// Parse the unicode character files.
@@ -202,6 +220,7 @@ namespace SecurePasswordGenerator
 
             return sb.ToString();
         }
+        #endregion // Unicode Processing
 
         /// <summary>
         /// Load the default values and write the cache file.
@@ -211,8 +230,9 @@ namespace SecurePasswordGenerator
             Letters = _Letters;
             Numbers = _Numbers;
             Symbols = _Symbols;
-            Unicode = GetViableUnicodeCodePoints();
-            Emoji = GetViableEmojiCodePoints();
+
+            UpdateUnicodeCodePoints();
+            UpdateEmojiCodePoints();
 
             WriteCacheFile();
         }
@@ -221,7 +241,7 @@ namespace SecurePasswordGenerator
         /// Get the expected path to the current cache file.
         /// </summary>
         /// <returns>A string containing the path to the current cache file.</returns>
-        public static string GetExpectedCacheFilePath()
+        private static string GetExpectedCacheFilePath()
         {
             // The current cache hashcode will be created by combining the
             // version of the program and the version of unicode being used.

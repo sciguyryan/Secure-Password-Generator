@@ -5,43 +5,34 @@ namespace SecurePasswordGenerator
 {
     static class ExtensionMethods
     {
-        public static List<string> GetCodePoints(this string str)
+        /// <summary>
+        /// Get the number of codepoints that comprise a string.
+        /// </summary>
+        /// <param name="str">The string to be processed.</param>
+        /// <returns>An integer giving the number of codepoints that comprise the string.</returns>
+        public static int GetNumberOfCodePoins(this string str)
         {
-            var codePoints = new List<string>();
-
-            var codePointEnumerator = StringInfo.GetTextElementEnumerator(str);
-            while (codePointEnumerator.MoveNext())
-            {
-                codePoints.Add(codePointEnumerator.GetTextElement());
-            }
-
-            return codePoints;
+            return str.GetCodePoints().Length;
         }
 
-        public static int CountCodePoints(this string str)
+        /// <summary>
+        /// Remove duplicate codepoints from a string.
+        /// </summary>
+        /// <param name="str">The string to be processed.</param>
+        /// <returns>An array containing the deduplicated codepoints that comprise the string.</returns>
+        public static string[] DeduplicateCodePoints(this string str)
         {
-            return str.GetCodePoints().Count;
-        }
-
-        public static string DeduplicateCodePoints(this string str)
-        {
-            var codePoints = str.GetCodePoints();
-
-            var deduplicated = new List<string>();
-            foreach (var codePoint in codePoints)
-            {
-                if (!deduplicated.Contains(codePoint))
-                {
-                    deduplicated.Add(codePoint);
-                }
-            }
-
-            return string.Join("", deduplicated);
+            return str.GetCodePoints().Distinct().ToArray();
         }
 
         // This is a modified version of the default hash code
         // generator from below. It has been modified to be stable.
         // https://referencesource.microsoft.com/#mscorlib/system/string.cs,827
+        /// <summary>
+        /// Get a stable (non-changing) hashcode for a string.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <returns>A string containing the hash for the input string.</returns>
         public static int GetStableHashCode(this string str)
         {
             unchecked
@@ -61,11 +52,39 @@ namespace SecurePasswordGenerator
             }
         }
 
+        /// <summary>
+        /// Get an array containing all of the unicode codepoints that comprise a string.
+        /// </summary>
+        /// <param name="str">The string to be processed.</param>
+        /// <returns>An array listing all of the codepoints that comprise the string.</returns>
+        public static string[] GetCodePoints(this string str)
+        {
+            var codePoints = new List<string>();
+
+            var codePointEnumerator = StringInfo.GetTextElementEnumerator(str);
+            while (codePointEnumerator.MoveNext())
+            {
+                codePoints.Add(codePointEnumerator.GetTextElement());
+            }
+
+            return codePoints.ToArray();
+        }
+
+        /// <summary>
+        /// Convert a string into a byte array.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <returns>An byte array containing the UTF-8 encoded bytes of the string.</returns>
         public static byte[] ToByteArray(this string str)
         {
             return Encoding.UTF8.GetBytes(str);
         }
 
+        /// <summary>
+        /// Convert a UTF-8 byte array into a string.
+        /// </summary>
+        /// <param name="bytes">An byte array containing the UTF-8 encoded bytes of the string.</param>
+        /// <returns>A string representing the UTF-8 encoded bytes.</returns>
         public static string FromByteArray(this byte[] bytes)
         {
             return Encoding.UTF8.GetString(bytes);

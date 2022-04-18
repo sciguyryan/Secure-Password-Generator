@@ -1,11 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
-using System.Security.Cryptography;
-using System.Linq;
-using System.Reflection;
-using System.Diagnostics;
-using System.Globalization;
+﻿using System.Security.Cryptography;
 
 namespace SecurePasswordGenerator
 {
@@ -23,7 +16,7 @@ namespace SecurePasswordGenerator
 
             // Automatically apply an event handler for each checkbox to
             // generate a new password immediately upon check state changed.
-            foreach (Control c in groupBox2.Controls)
+            foreach (var c in groupBox2.Controls)
             {
                 if (c is CheckBox check)
                 {
@@ -31,6 +24,7 @@ namespace SecurePasswordGenerator
                 }
             }
 
+            // Configure the various control tooltips.
             toolTip1.SetToolTip(passwordLen, "The length of the password to generate, in characters (or graphemes, if unicode or emoji are used)");
             toolTip1.SetToolTip(useLetters, "Use basic letters (a-z and A-Z)");
             toolTip1.SetToolTip(useNumbers, "Use basic numbers (0-9)");
@@ -40,72 +34,70 @@ namespace SecurePasswordGenerator
             toolTip1.SetToolTip(excludeCharacters, "Excluce specific characters from the password generation list");
             toolTip1.SetToolTip(includedCharacters, "Include specific characters in the password generation list");
 
-            this.GeneratePassword();
+            GeneratePassword();
         }
 
         public void GeneratePassword()
         {
-            var reminingCodePoints = (int)passwordLen.Value;
-            var availableCodePoints = "";
+            var codePoints = "";
 
-            var isUnicodeMadness = useUnicode.Checked;
+            var isUnicode = useUnicode.Checked;
             var isEmoji = useEmoji.Checked;
 
-            if (useLetters.Checked && !isUnicodeMadness)
+            if (useLetters.Checked && !isUnicode)
             {
-                availableCodePoints += CodePoints.Letters;
+                codePoints += CodePoints.Letters;
             }
 
-            if (useNumbers.Checked && !isUnicodeMadness)
+            if (useNumbers.Checked && !isUnicode)
             {
-                availableCodePoints += CodePoints.Numbers;
+                codePoints += CodePoints.Numbers;
             }
 
-            if (useSymbols.Checked && !isUnicodeMadness)
+            if (useSymbols.Checked && !isUnicode)
             {
-                availableCodePoints += CodePoints.Symbols;
+                codePoints += CodePoints.Symbols;
             }
 
             if (isEmoji)
             {
-                availableCodePoints += CodePoints.Emoji;
+                codePoints += CodePoints.Emoji;
             }
 
-            if (isUnicodeMadness)
+            if (isUnicode)
             {
-                availableCodePoints += CodePoints.Unicode;
+                codePoints += CodePoints.Unicode;
             }
 
             if (useExclude.Checked)
             {
                 foreach (var c in excludeCharacters.Text)
                 {
-                    availableCodePoints = availableCodePoints.Replace(c.ToString(), "");
+                    codePoints = codePoints.Replace($"{c}", "");
                 }
             }
 
             if (useInclude.Checked)
             {
-                availableCodePoints += includedCharacters.Text;
+                codePoints += includedCharacters.Text;
             }
 
             // Ensure that there is only one of each codepoint in our final string.
-            // We do not want to do this when dealing with unicode since it slows things down
-            // due to the vast number of codepoints available.
-            var availableFinal = 
-                isUnicodeMadness ? availableCodePoints : availableCodePoints.DeduplicateCodePoints();
-
-            var allCodePoints = availableFinal.GetCodePoints();
-            if (allCodePoints.Count == 0)
+            // We do not want to do this when dealing with unicode since it slows
+            // things down due to the vast number of codepoints available.
+            var cpList = isUnicode ?
+                codePoints.GetCodePoints() : codePoints.DeduplicateCodePoints();
+            if (cpList.Length == 0)
             {
                 password.Text = "";
                 return;
             }
 
             var passwordText = "";
+            var reminingCodePoints = (int)passwordLen.Value;
             while (reminingCodePoints > 0)
             {
-                passwordText += allCodePoints[CryptoRandomInteger(0, allCodePoints.Count)];
+                passwordText += cpList[CryptoRandomInteger(0, cpList.Length)];
                 --reminingCodePoints;
             }
 
@@ -171,8 +163,15 @@ namespace SecurePasswordGenerator
         {
             if (keyData == (Keys.D | Keys.Control | Keys.Shift))
             {
-                var f = new Form2();
-                f.ShowDialog();
+                using var f = new Form2();
+                if (f.ShowDialog() == DialogResult.OK)
+                {
+                    // We need to update the codepoint list.
+                    CodePoints.ReadCacheFile();
+
+                    // Generate a new password based on the updated defaults.
+                    GeneratePassword();
+                }
 
                 return true;
             }
