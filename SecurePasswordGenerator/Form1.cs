@@ -4,8 +4,8 @@ namespace SecurePasswordGenerator
 {
     public partial class Form1 : Form
     {
-        private readonly RandomNumberGenerator RNGCrypto = RandomNumberGenerator.Create();
-        private readonly ViableCodePoints CodePoints = new();
+        private readonly RandomNumberGenerator _rngCrypto = RandomNumberGenerator.Create();
+        private readonly ViableCodePoints _codePoints = new();
 
         public Form1()
         {
@@ -20,18 +20,18 @@ namespace SecurePasswordGenerator
             {
                 if (c is CheckBox check)
                 {
-                    check.CheckedChanged += (sender, e) => GeneratePassword();
+                    check.CheckedChanged += (_, _) => GeneratePassword();
                 }
             }
 
             // Configure the various control tooltips.
-            toolTip1.SetToolTip(passwordLen, "The length of the password to generate, in characters (or graphemes, if unicode or emoji are used)");
+            toolTip1.SetToolTip(passwordLen, "The length of the password to generate, in characters (or graphemes, if unicode or Emoji are used)");
             toolTip1.SetToolTip(useLetters, "Use basic letters (a-z and A-Z)");
             toolTip1.SetToolTip(useNumbers, "Use basic numbers (0-9)");
             toolTip1.SetToolTip(useSymbols, "Use commonly accepted symbols");
             toolTip1.SetToolTip(useEmoji, "Use Emoji, ever permitted variant");
             toolTip1.SetToolTip(useUnicode, "No right, no wrong, no rules for me - I'm free!");
-            toolTip1.SetToolTip(excludeCharacters, "Excluce specific characters from the password generation list");
+            toolTip1.SetToolTip(excludeCharacters, "Exclude specific characters from the password generation list");
             toolTip1.SetToolTip(includedCharacters, "Include specific characters in the password generation list");
 
             GeneratePassword();
@@ -46,27 +46,27 @@ namespace SecurePasswordGenerator
 
             if (useLetters.Checked && !isUnicode)
             {
-                codePoints += CodePoints.Letters;
+                codePoints += _codePoints.Letters;
             }
 
             if (useNumbers.Checked && !isUnicode)
             {
-                codePoints += CodePoints.Numbers;
+                codePoints += _codePoints.Numbers;
             }
 
             if (useSymbols.Checked && !isUnicode)
             {
-                codePoints += CodePoints.Symbols;
+                codePoints += _codePoints.Symbols;
             }
 
             if (isEmoji)
             {
-                codePoints += CodePoints.Emoji;
+                codePoints += _codePoints.Emoji;
             }
 
             if (isUnicode)
             {
-                codePoints += CodePoints.Unicode;
+                codePoints += _codePoints.Unicode;
             }
 
             if (useExclude.Checked)
@@ -84,7 +84,7 @@ namespace SecurePasswordGenerator
 
             // Ensure that there is only one of each codepoint in our final string.
             // We do not want to do this when dealing with unicode since it slows
-            // things down due to the vast number of codepoints available.
+            // things down due to the vast number of code points available.
             var cpList = isUnicode ?
                 codePoints.GetCodePoints() : codePoints.DeduplicateCodePoints();
             if (cpList.Length == 0)
@@ -94,11 +94,11 @@ namespace SecurePasswordGenerator
             }
 
             var passwordText = "";
-            var reminingCodePoints = (int)passwordLen.Value;
-            while (reminingCodePoints > 0)
+            var remainingCodePoints = (int)passwordLen.Value;
+            while (remainingCodePoints > 0)
             {
                 passwordText += cpList[CryptoRandomInteger(0, cpList.Length)];
-                --reminingCodePoints;
+                --remainingCodePoints;
             }
 
             password.Text = passwordText;
@@ -110,7 +110,7 @@ namespace SecurePasswordGenerator
             while (scale == uint.MaxValue)
             {
                 var fourBytes = new byte[4];
-                RNGCrypto.GetBytes(fourBytes);
+                _rngCrypto.GetBytes(fourBytes);
 
                 scale = BitConverter.ToUInt32(fourBytes, 0);
             }
@@ -161,23 +161,23 @@ namespace SecurePasswordGenerator
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == (Keys.D | Keys.Control | Keys.Shift))
+            if (keyData != (Keys.D | Keys.Control | Keys.Shift))
             {
-                using var f = new Form2();
-                if (f.ShowDialog() == DialogResult.OK)
-                {
-                    // We need to update the codepoint list.
-                    CodePoints.ReadCacheFile();
-
-                    // Generate a new password based on the updated defaults.
-                    GeneratePassword();
-                }
-
-                return true;
+                // Call the base class.
+                return base.ProcessCmdKey(ref msg, keyData);
             }
 
-            // Call the base class
-            return base.ProcessCmdKey(ref msg, keyData);
+            using var f = new Form2();
+            if (f.ShowDialog() == DialogResult.OK)
+            {
+                // We need to update the codepoint list.
+                _codePoints.ReadCacheFile();
+
+                // Generate a new password based on the updated defaults.
+                GeneratePassword();
+            }
+
+            return true;
         }
     }
 }

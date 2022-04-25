@@ -11,12 +11,7 @@ namespace SecurePasswordGenerator
         public static string GetAssemblyVersion()
         {
             var ver = Assembly.GetExecutingAssembly().GetName().Version;
-            if (ver is null)
-            {
-                return "";
-            }
-
-            return ver.ToString();
+            return ver is null ? "" : ver.ToString();
         }
 
         /// <summary>

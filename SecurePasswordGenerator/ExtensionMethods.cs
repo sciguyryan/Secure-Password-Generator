@@ -3,23 +3,23 @@ using System.Text;
 
 namespace SecurePasswordGenerator
 {
-    static class ExtensionMethods
+    internal static class ExtensionMethods
     {
         /// <summary>
-        /// Get the number of codepoints that comprise a string.
+        /// Get the number of code points that comprise a string.
         /// </summary>
         /// <param name="str">The string to be processed.</param>
-        /// <returns>An integer giving the number of codepoints that comprise the string.</returns>
-        public static int GetNumberOfCodePoins(this string str)
+        /// <returns>An integer giving the number of code points that comprise the string.</returns>
+        public static int GetNumberOfCodePoints(this string str)
         {
             return str.GetCodePoints().Length;
         }
 
         /// <summary>
-        /// Remove duplicate codepoints from a string.
+        /// Remove duplicate code points from a string.
         /// </summary>
         /// <param name="str">The string to be processed.</param>
-        /// <returns>An array containing the deduplicated codepoints that comprise the string.</returns>
+        /// <returns>An array containing the deduplicated code points that comprise the string.</returns>
         public static string[] DeduplicateCodePoints(this string str)
         {
             return str.GetCodePoints().Distinct().ToArray();
@@ -37,10 +37,10 @@ namespace SecurePasswordGenerator
         {
             unchecked
             {
-                int hash1 = 5381;
-                int hash2 = hash1;
+                var hash1 = 5381;
+                var hash2 = hash1;
 
-                for (int i = 0; i < str.Length && str[i] != '\0'; i += 2)
+                for (var i = 0; i < str.Length && str[i] != '\0'; i += 2)
                 {
                     hash1 = ((hash1 << 5) + hash1) ^ str[i];
                     if (i == str.Length - 1 || str[i + 1] == '\0')
@@ -53,10 +53,10 @@ namespace SecurePasswordGenerator
         }
 
         /// <summary>
-        /// Get an array containing all of the unicode codepoints that comprise a string.
+        /// Get an array containing all of the unicode code points that comprise a string.
         /// </summary>
         /// <param name="str">The string to be processed.</param>
-        /// <returns>An array listing all of the codepoints that comprise the string.</returns>
+        /// <returns>An array listing all of the code points that comprise the string.</returns>
         public static string[] GetCodePoints(this string str)
         {
             var codePoints = new List<string>();

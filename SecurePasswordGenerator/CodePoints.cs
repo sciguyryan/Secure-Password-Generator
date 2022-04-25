@@ -3,44 +3,44 @@ using System.Text;
 
 namespace SecurePasswordGenerator
 {
-    class ViableCodePoints
+    internal class ViableCodePoints
     {
         /// <summary>
         /// The current version of the unicode standard being used.
         /// </summary>
-        private const string UNICODE_VERSION = "14.0.0";
+        private const string UnicodeVersion = "14.0.0";
 
         /// <summary>
         /// The delimiter used in the cache data file.
         /// It must not be the same character as any character found in any of the lists.
         /// </summary>
-        private const char DELIMITER = '\0';
+        private const char Delimiter = '\0';
 
         /// <summary>
         /// A list of all basic (Latin) letters. a-z and A-Z.
         /// </summary>
         public string Letters = "";
-        private readonly string _Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        private const string _Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         /// <summary>
         /// A list of all basic numbers. 0-9.
         /// </summary>
         public string Numbers = "";
-        private readonly string _Numbers = "1234567890";
+        private const string _Numbers = "1234567890";
 
         /// <summary>
         /// A list of common symbols.
         /// </summary>
         public string Symbols = "";
-        private readonly string _Symbols = " !\"#$%&\'()*+,-./\\:;?@[]^_`{|}~£^!|";
+        private const string _Symbols = " !\"#$%&\'()*+,-./\\:;?@[]^_`{|}~£^!|";
 
         /// <summary>
-        /// A list of all applicable unicode codepoints.
+        /// A list of all applicable unicode code points.
         /// </summary>
         public string Unicode { get; private set; } = "";
 
         /// <summary>
-        /// A list of all applicable Emoji codepoints.
+        /// A list of all applicable Emoji code points.
         /// </summary>
         public string Emoji { get; private set; } = "";
 
@@ -65,7 +65,7 @@ namespace SecurePasswordGenerator
         private static string GetViableEmojiCodePoints()
         {
             // The unicode Emoji files never contain the build value.
-            var emojiVersion = UNICODE_VERSION[..UNICODE_VERSION.LastIndexOf(".")];
+            var emojiVersion = UnicodeVersion[..UnicodeVersion.LastIndexOf(".")];
 
             using var client = new HttpClient();
             var file1 = client.GetStringAsync($"https://unicode.org/Public/emoji/{emojiVersion}/emoji-sequences.txt").Result;
@@ -153,7 +153,7 @@ namespace SecurePasswordGenerator
         private static string GetViableUnicodeCodePoints()
         {
             using var client = new HttpClient();
-            var file = client.GetStringAsync($"https://unicode.org/Public/{UNICODE_VERSION}/ucd/UnicodeData.txt").Result;
+            var file = client.GetStringAsync($"https://unicode.org/Public/{UnicodeVersion}/ucd/UnicodeData.txt").Result;
             return ParseUnicodeDataFile(ref file);
         }
 
@@ -194,7 +194,7 @@ namespace SecurePasswordGenerator
                 var id = int.Parse(segments[0], NumberStyles.HexNumber);
 
                 // We want to skip emoji, they are handled seperately.
-                if (id >= 0x1f600 && id <= 0x1f64f)
+                if (id is >= 0x1f600 and <= 0x1f64f)
                 {
                     continue;
                 }
@@ -245,7 +245,7 @@ namespace SecurePasswordGenerator
         {
             // The current cache hashcode will be created by combining the
             // version of the program and the version of unicode being used.
-            var hashCode = (Utils.GetAssemblyVersion() + UNICODE_VERSION)
+            var hashCode = (Utils.GetAssemblyVersion() + UnicodeVersion)
                 .GetStableHashCode()
                 .ToString("X4");
 
@@ -274,14 +274,14 @@ namespace SecurePasswordGenerator
             var len = bytes.Length;
 
             // Split the cache file into segments, split by the specified
-            // delimitor.
+            // deliminator.
             var segmentBytes = new List<byte>();
             for (var i = 0; i < len; i++)
             {
                 var b = bytes[i];
 
                 // We have hit the end of segment marker.
-                if (b == DELIMITER || i == len - 1)
+                if (b == Delimiter || i == len - 1)
                 {
                     strings.Add(segmentBytes.ToArray().FromByteArray());
                     segmentBytes.Clear();
@@ -331,8 +331,8 @@ namespace SecurePasswordGenerator
             try
             {
                 var bytes =
-                    (Letters + DELIMITER + Numbers + DELIMITER +
-                    Symbols + DELIMITER + Emoji + DELIMITER +
+                    (Letters + Delimiter + Numbers + Delimiter +
+                    Symbols + Delimiter + Emoji + Delimiter +
                     Unicode).ToByteArray();
                 using var f = new FileStream(path, FileMode.Create, FileAccess.Write);
                 f.Write(bytes, 0, bytes.Length);
