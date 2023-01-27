@@ -19,7 +19,7 @@ namespace SecurePasswordGenerator
         /// Remove duplicate code points from a string.
         /// </summary>
         /// <param name="str">The string to be processed.</param>
-        /// <returns>An array containing the deduplicated code points that comprise the string.</returns>
+        /// <returns>An array containing the de-duplicated code points that comprise the string.</returns>
         public static string[] DeduplicateCodePoints(this string str)
         {
             return str.GetCodePoints().Distinct().ToArray();

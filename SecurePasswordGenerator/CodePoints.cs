@@ -8,7 +8,7 @@ namespace SecurePasswordGenerator
         /// <summary>
         /// The current version of the unicode standard being used.
         /// </summary>
-        private const string UnicodeVersion = "14.0.0";
+        private const string UnicodeVersion = "15.0.0";
 
         /// <summary>
         /// The delimiter used in the cache data file.
