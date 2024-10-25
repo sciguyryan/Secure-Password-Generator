@@ -71,10 +71,9 @@ namespace SecurePasswordGenerator
 
             if (useExclude.Checked)
             {
-                foreach (var c in excludeCharacters.Text)
-                {
-                    codePoints = codePoints.Replace($"{c}", "");
-                }
+                codePoints = 
+                    excludeCharacters.Text.Aggregate(codePoints, (current, c) =>
+                        current.Replace($"{c}", ""));
             }
 
             if (useInclude.Checked)
@@ -168,14 +167,16 @@ namespace SecurePasswordGenerator
             }
 
             using var f = new Form2();
-            if (f.ShowDialog() == DialogResult.OK)
+            if (f.ShowDialog() != DialogResult.OK)
             {
-                // We need to update the codepoint list.
-                _codePoints.ReadCacheFile();
-
-                // Generate a new password based on the updated defaults.
-                GeneratePassword();
+                return true;
             }
+
+            // We need to update the codepoint list.
+            _codePoints.ReadCacheFile();
+
+            // Generate a new password based on the updated defaults.
+            GeneratePassword();
 
             return true;
         }

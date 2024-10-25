@@ -8,7 +8,7 @@ namespace SecurePasswordGenerator
         /// <summary>
         /// The current version of the unicode standard being used.
         /// </summary>
-        private const string UnicodeVersion = "15.0.0";
+        private const string UnicodeVersion = "16.0.0";
 
         /// <summary>
         /// The delimiter used in the cache data file.
@@ -20,19 +20,19 @@ namespace SecurePasswordGenerator
         /// A list of all basic (Latin) letters. a-z and A-Z.
         /// </summary>
         public string Letters = "";
-        private const string _Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        private const string LettersDefault = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         /// <summary>
         /// A list of all basic numbers. 0-9.
         /// </summary>
         public string Numbers = "";
-        private const string _Numbers = "1234567890";
+        private const string NumbersDefault = "1234567890";
 
         /// <summary>
         /// A list of common symbols.
         /// </summary>
         public string Symbols = "";
-        private const string _Symbols = " !\"#$%&\'()*+,-./\\:;?@[]^_`{|}~£^!|";
+        private const string SymbolsDefault = " !\"#$%&\'()*+,-./\\:;?@[]^_`{|}~£^!|";
 
         /// <summary>
         /// A list of all applicable unicode code points.
@@ -65,7 +65,7 @@ namespace SecurePasswordGenerator
         private static string GetViableEmojiCodePoints()
         {
             // The unicode Emoji files never contain the build value.
-            var emojiVersion = UnicodeVersion[..UnicodeVersion.LastIndexOf(".")];
+            var emojiVersion = UnicodeVersion[..UnicodeVersion.LastIndexOf(".", StringComparison.Ordinal)];
 
             using var client = new HttpClient();
             var file1 = client.GetStringAsync($"https://unicode.org/Public/emoji/{emojiVersion}/emoji-sequences.txt").Result;
@@ -121,10 +121,10 @@ namespace SecurePasswordGenerator
                 else
                 {
                     var hexIDs = trimmed.Split(' ', StringSplitOptions.None);
-                    foreach (var hexID in hexIDs)
+                    foreach (var hexId in hexIDs)
                     {
                         // In this case we can trust that these are valid numbers.
-                        var id = int.Parse(hexID, NumberStyles.HexNumber);
+                        var id = int.Parse(hexId, NumberStyles.HexNumber);
 
                         // We can't simply append a character where the index is above
                         // 0xffff, so we must use the unicode code point converter instead.
@@ -193,19 +193,16 @@ namespace SecurePasswordGenerator
                 // In this case we can trust that these are valid numbers.
                 var id = int.Parse(segments[0], NumberStyles.HexNumber);
 
-                // We want to skip emoji, they are handled seperately.
-                if (id is >= 0x1f600 and <= 0x1f64f)
+                switch (id)
                 {
-                    continue;
+                    // We want to skip Emoji, they are handled separately.
+                    case >= 0x1f600 and <= 0x1f64f:
+                    // We also want to skip the unicode replacement character.
+                    case 0xfffd:
+                        continue;
                 }
 
-                // We also want to skip the unicode replacement character.
-                if (id == 0xfffd)
-                {
-                    continue;
-                }
-
-                // We will elimininate any character that belong
+                // We will eliminate any character that belong
                 // to any of the categories we do not want.
                 // Spaces will be excluded from elimination.
                 if (id != 0x0020 && bannedCategories.Contains(segments[2]) )
@@ -227,9 +224,9 @@ namespace SecurePasswordGenerator
         /// </summary>
         private void LoadAndSaveDefaults()
         {
-            Letters = _Letters;
-            Numbers = _Numbers;
-            Symbols = _Symbols;
+            Letters = LettersDefault;
+            Numbers = NumbersDefault;
+            Symbols = SymbolsDefault;
 
             UpdateUnicodeCodePoints();
             UpdateEmojiCodePoints();
