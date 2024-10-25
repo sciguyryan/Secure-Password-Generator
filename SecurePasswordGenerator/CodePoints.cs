@@ -65,7 +65,7 @@ namespace SecurePasswordGenerator
         private static string GetViableEmojiCodePoints()
         {
             // The unicode Emoji files never contain the build value.
-            var emojiVersion = UnicodeVersion[..UnicodeVersion.LastIndexOf(".", StringComparison.Ordinal)];
+            var emojiVersion = UnicodeVersion[..UnicodeVersion.LastIndexOf('.')];
 
             using var client = new HttpClient();
             var file1 = client.GetStringAsync($"https://unicode.org/Public/emoji/{emojiVersion}/emoji-sequences.txt").Result;
@@ -85,7 +85,7 @@ namespace SecurePasswordGenerator
         {
             var sb = new StringBuilder();
 
-            var lines = contents.Split(new [] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            var lines = contents.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
             foreach (var line in lines)
             {
                 // These are comments.
@@ -185,7 +185,7 @@ namespace SecurePasswordGenerator
                 "Zs"
             };
 
-            var lines = contents.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            var lines = contents.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
             foreach (var line in lines)
             {
                 var segments = line.Split(";");
